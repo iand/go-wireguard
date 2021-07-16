@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/flynn/go-wireguard/internal/critbitgo"
+	"github.com/libp2p/go-wireguard/internal/critbitgo"
 )
 
 func buildTrie(t *testing.T, keys []string) *critbitgo.Trie {
@@ -72,7 +72,7 @@ func TestContains(t *testing.T) {
 
 	for _, key := range keys {
 		if !trie.Contains([]byte(key)) {
-			t.Error("Contains() - not found - %s", key)
+			t.Errorf("Contains() - not found - %s", key)
 		}
 	}
 
@@ -87,7 +87,7 @@ func TestGet(t *testing.T) {
 
 	for _, key := range keys {
 		if value, ok := trie.Get([]byte(key)); value != key || !ok {
-			t.Error("Get() - not found - %s", key)
+			t.Errorf("Get() - not found - %s", key)
 		}
 	}
 
@@ -102,13 +102,13 @@ func TestDelete(t *testing.T) {
 
 	for i, key := range keys {
 		if !trie.Contains([]byte(key)) {
-			t.Error("Delete() - not exists - %s", key)
+			t.Errorf("Delete() - not exists - %s", key)
 		}
 		if v, ok := trie.Delete([]byte(key)); !ok || v != key {
-			t.Error("Delete() - failed - %s", key)
+			t.Errorf("Delete() - failed - %s", key)
 		}
 		if trie.Contains([]byte(key)) {
-			t.Error("Delete() - exists - %s", key)
+			t.Errorf("Delete() - exists - %s", key)
 		}
 		if i != len(keys) {
 			for _, key2 := range keys[i+1:] {
@@ -125,13 +125,13 @@ func TestSize(t *testing.T) {
 	trie := buildTrie(t, keys)
 	klen := len(keys)
 	if s := trie.Size(); s != klen {
-		t.Errorf("Size() - expected [%s], actual [%s]", klen, s)
+		t.Errorf("Size() - expected [%d], actual [%d]", klen, s)
 	}
 
 	for i, key := range keys {
 		trie.Delete([]byte(key))
 		if s := trie.Size(); s != klen-(i+1) {
-			t.Errorf("Size() - expected [%s], actual [%s]", klen, s)
+			t.Errorf("Size() - expected [%d], actual [%d]", klen, s)
 		}
 	}
 }
@@ -167,10 +167,7 @@ func TestAllprefixed(t *testing.T) {
 	elems = make(map[string]interface{})
 	handle = func(key []byte, value interface{}) bool {
 		elems[string(key)] = value
-		if string(key) == "aa" {
-			return false
-		}
-		return true
+		return string(key) != "aa"
 	}
 	if trie.Allprefixed([]byte("a"), handle) {
 		t.Error("Allprefixed() - invalid result")
@@ -204,18 +201,18 @@ func TestKeyContainsZeroValue(t *testing.T) {
 
 	var index int
 	exp := [][]byte{
-		[]byte{},
-		[]byte{0},
-		[]byte{0, 0},
-		[]byte{0, 0, 0},
-		[]byte{0, 0, 1},
-		[]byte{0, 1},
-		[]byte{0, 1, 0},
-		[]byte{0, 1, 1},
-		[]byte{1},
-		[]byte{1, 0, 1},
-		[]byte{1, 1},
-		[]byte{1, 1, 1},
+		{},
+		{0},
+		{0, 0},
+		{0, 0, 0},
+		{0, 0, 1},
+		{0, 1},
+		{0, 1, 0},
+		{0, 1, 1},
+		{1},
+		{1, 0, 1},
+		{1, 1},
+		{1, 1, 1},
 	}
 	handle := func(key []byte, _ interface{}) bool {
 		if !bytes.Equal(exp[index], key) {

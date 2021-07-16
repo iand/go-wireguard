@@ -300,7 +300,6 @@ func dump(w io.Writer, n *node, right bool, prefix string) {
 	} else {
 		fmt.Fprintf(w, "%s-- key=%d (%s)\n", ownprefix, n.external.key, key2str(n.external.key))
 	}
-	return
 }
 
 func key2str(key []byte) string {

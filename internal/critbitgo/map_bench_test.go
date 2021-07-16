@@ -7,12 +7,16 @@ import (
 	"testing"
 )
 
-var keyCount int = 10000
-var keyLen int = 128
+var (
+	keyCount int = 10000
+	keyLen   int = 128
+)
 
-var keys []string
-var alphabet string = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-var alphalen int = len(alphabet)
+var (
+	keys     []string
+	alphabet string = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+	alphalen int    = len(alphabet)
+)
 
 func init() {
 	keys = make([]string, keyCount)
@@ -79,9 +83,7 @@ func BenchmarkMapDelete(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		k := keys[random.Intn(keyCount)]
-		if _, ok := m[k]; ok {
-			delete(m, k)
-		}
+		delete(m, k)
 	}
 }
 

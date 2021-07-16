@@ -5,12 +5,10 @@ import (
 	"net"
 	"sync"
 
-	"github.com/flynn/go-wireguard/internal/critbitgo"
+	"github.com/libp2p/go-wireguard/internal/critbitgo"
 )
 
-var (
-	errInvalidIpPacket = errors.New("wireguard: invalid ip packet")
-)
+var errInvalidIpPacket = errors.New("wireguard: invalid ip packet")
 
 type RouteTable struct {
 	trie *critbitgo.Net
@@ -24,14 +22,14 @@ func NewRouteTable() RouteTable {
 
 // Insert inserts the entry into the routing table. If a previous entry exists,
 // it is replaced.
-func (rt RouteTable) Insert(r *net.IPNet, p *peer) error {
+func (rt *RouteTable) Insert(r *net.IPNet, p *peer) error {
 	rt.Lock()
 	defer rt.Unlock()
 	return rt.trie.Add(r, p)
 }
 
 // Remove deletes the entry from the routing table.
-func (rt RouteTable) Remove(r *net.IPNet) error {
+func (rt *RouteTable) Remove(r *net.IPNet) error {
 	rt.Lock()
 	defer rt.Unlock()
 	_, _, err := rt.trie.Delete(r)
@@ -40,7 +38,7 @@ func (rt RouteTable) Remove(r *net.IPNet) error {
 
 // Lookup returns the peer matching the longest prefix match
 // for the given ip.
-func (rt RouteTable) Lookup(ip net.IP) (p *peer, err error) {
+func (rt *RouteTable) Lookup(ip net.IP) (p *peer, err error) {
 	rt.RLock()
 	defer rt.RUnlock()
 	r, pInf, err := rt.trie.MatchIP(ip)
@@ -52,7 +50,7 @@ func (rt RouteTable) Lookup(ip net.IP) (p *peer, err error) {
 	return p, err
 }
 
-func (rt RouteTable) LookupFromPacket(packet []byte) (p *peer, err error) {
+func (rt *RouteTable) LookupFromPacket(packet []byte) (p *peer, err error) {
 	ipVer := packet[0] >> 4
 
 	var dst net.IP
@@ -69,7 +67,7 @@ func (rt RouteTable) LookupFromPacket(packet []byte) (p *peer, err error) {
 }
 
 // RemoveByPeer deletes all entries associated with the given peer.
-func (rt RouteTable) RemoveByPeer(p *peer) error {
+func (rt *RouteTable) RemoveByPeer(p *peer) error {
 	rt.Lock()
 	defer rt.Unlock()
 	routes := rt.trie.GetByValue(p)
@@ -83,8 +81,8 @@ func (rt RouteTable) RemoveByPeer(p *peer) error {
 }
 
 // Clear sets the routing table to be empty.
-func (rt RouteTable) Clear() {
+func (rt *RouteTable) Clear() {
 	rt.Lock()
-	rt.Unlock()
+	defer rt.Unlock()
 	rt.trie.Clear()
 }

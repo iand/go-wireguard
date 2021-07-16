@@ -19,6 +19,7 @@ const (
 	cookieLen     = 16
 )
 
+//lint:ignore U1000 keep for the moment
 type cookie struct {
 	birthdate time.Time
 	valid     bool
@@ -28,6 +29,7 @@ type cookie struct {
 	sync.RWMutex
 }
 
+//lint:ignore U1000 keep for the moment
 func (f *Interface) cookieAddMACs(msg []byte, peer *peer) []byte {
 	if cap(msg) < len(msg)+(cookieLen*2) {
 		panic("msg is not long enough")
@@ -69,14 +71,15 @@ func (f *Interface) cookieAddMACs(msg []byte, peer *peer) []byte {
 		log.Printf("before mac2: len(msg)=%d\n", len(msg))
 		msg = msg[:len(msg)+cookieLen]
 		return msg
-		log.Printf("after mac2: len(msg)=%d\n", len(msg))
 	}
 
 	return msg
 }
 
+//lint:ignore U1000 keep for the moment
 var chapZeroNonce = make([]byte, chap.NonceSize)
 
+//lint:ignore U1000 keep for the moment
 func (f *Interface) cookieMessageConsume(msg []byte) {
 	var peer *peer
 	receiverIndex := binary.LittleEndian.Uint32(msg[1:])

@@ -4,7 +4,7 @@ import (
 	"net"
 	"testing"
 
-	"github.com/flynn/go-wireguard/internal/critbitgo"
+	"github.com/libp2p/go-wireguard/internal/critbitgo"
 )
 
 func TestNet(t *testing.T) {
@@ -112,17 +112,13 @@ func TestNetMatch(t *testing.T) {
 func TestNetGetByValue(t *testing.T) {
 	trie := critbitgo.NewNet()
 
-	type kv struct {
-		k, v string
-	}
-
 	entriesByValue := map[string][]string{
-		"0": []string{"0.0.0.0/4", "192.168.0.0/16"},
-		"1": []string{"192.168.1.0/24", "192.168.1.0/28"},
-		"2": []string{"192.168.1.0/32", "192.168.1.1/32"},
-		"3": []string{"192.168.1.2/32", "192.168.1.32/27"},
-		"4": []string{"192.168.1.32/30", "192.168.2.1/32"},
-		"5": []string{"192.168.2.2/32"},
+		"0": {"0.0.0.0/4", "192.168.0.0/16"},
+		"1": {"192.168.1.0/24", "192.168.1.0/28"},
+		"2": {"192.168.1.0/32", "192.168.1.1/32"},
+		"3": {"192.168.1.2/32", "192.168.1.32/27"},
+		"4": {"192.168.1.32/30", "192.168.2.1/32"},
+		"5": {"192.168.2.2/32"},
 	}
 
 	for k, v := range entriesByValue {

@@ -19,8 +19,10 @@ const (
 
 	messageMinLen = 1 /*type*/
 
+	//lint:ignore U1000 keep for the moment
 	messageOptimalAlignment = 32
-	messagePaddingMultiple  = 16
+	//lint:ignore U1000 keep for the moment
+	messagePaddingMultiple = 16
 )
 
 func checkMessageType(b []byte) messageType {

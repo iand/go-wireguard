@@ -23,6 +23,8 @@ func (f *Interface) acceptOutsidePackets() {
 		log.Println("wip: f.outside.ReadFromUDP()")
 		n, addr, err := f.outside.ReadFromUDP(buf)
 		log.Printf("wip: f.outside.ReadFromUDP() finished: (%d, %+v, %s)", n, addr, err)
+
+		//lint:ignore SA9003 figure out what kind of errors can be returned
 		if err != nil {
 			// TODO: figure out what kind of errors can be returned
 		}
@@ -68,7 +70,11 @@ func (f *Interface) receiveHandshakePacket(typ messageType, p packet) {
 			return
 		}
 		peer.updateLatestAddr(p.addr)
-		res := f.handshakeCreateResponse(&peer.handshake)
+		res, err := f.handshakeCreateResponse(&peer.handshake)
+		if err != nil {
+			// TODO: log error
+			return
+		}
 		_ = res
 	case messageHandshakeResponse:
 		peer, err = f.handshakeConsumeResponse(p.data)

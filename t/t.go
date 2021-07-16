@@ -2,10 +2,11 @@ package main
 
 import (
 	"encoding/base64"
-	"github.com/flynn/go-wireguard"
-	"github.com/nnathan/water"
 	"log"
 	"net"
+
+	"github.com/libp2p/go-wireguard"
+	"github.com/nnathan/water"
 )
 
 func main() {

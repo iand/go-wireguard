@@ -7,7 +7,7 @@ import (
 	"runtime"
 )
 
-var ErrHostUnreachable = errors.New("Host unreachable")
+var ErrHostUnreachable = errors.New("host unreachable")
 
 // TODO: be smarter about this
 const mtu = 1500
@@ -29,7 +29,7 @@ func (f *Interface) readInsidePackets() {
 
 	for {
 		buf := make([]byte, mtu)
-		log.Println("wip: f.inside.Read()\n")
+		log.Println("wip: f.inside.Read()")
 		n, err := f.inside.Read(buf)
 		log.Printf("wip: f.inside.Read() finished: (%d, %s)\n", n, err)
 		if err != nil {

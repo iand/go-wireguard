@@ -12,6 +12,7 @@ import (
 
 var peerCounter uint64
 
+//lint:ignore U1000 keep for the moment
 const maxPeers int = 1<<16 - 1
 
 // A Peer is a remote endpoint that can be communicated with via an Interface.
@@ -56,6 +57,7 @@ type peer struct {
 	handshake         noiseHandshake
 	lastSentHandshake time.Time
 
+	//lint:ignore U1000 keep for the moment
 	latestCookie cookie
 
 	keypairs noiseKeypairs
@@ -65,18 +67,18 @@ type peer struct {
 	txQueue *PacketQueue
 
 	persistentKeepaliveInterval int
-	needAnotherKeepalive        bool
-	retransmitHandshake         *time.Timer
-	sendKeepalive               *time.Timer
-	newHandshake                *time.Timer
-	killEphemerals              *time.Timer
-	persistentKeepalive         *time.Timer
+	//lint:ignore U1000 keep for the moment
+	needAnotherKeepalive bool
+	retransmitHandshake  *time.Timer
+	sendKeepalive        *time.Timer
+	newHandshake         *time.Timer
+	killEphemerals       *time.Timer
+	persistentKeepalive  *time.Timer
 
 	iface *Interface
 }
 
 func (p *peer) public() *Peer {
-
 	p.iface.routetable.RLock()
 	routes := p.iface.routetable.trie.GetByValue(p)
 	p.iface.routetable.RUnlock()
@@ -115,11 +117,13 @@ func (p *peer) rxStats(n int) {
 	p.rxBytes += uint64(n)
 }
 
+//lint:ignore U1000 keep for the moment
 func (p *peer) txStats(n int) {
 	p.txBytes += uint64(n)
 }
 
 // send implements packet_send_queue()
+//lint:ignore U1000 keep for the moment
 func (p *peer) send(packet []byte) error {
 	p.keypairs.RLock()
 	defer p.keypairs.RUnlock()
@@ -129,11 +133,17 @@ func (p *peer) send(packet []byte) error {
 	return nil
 }
 
+//lint:ignore U1000 keep for the moment
 func (p *peer) sendHandshakeInitiation() error {
 	var hs []byte
+	var err error
 	// no keypair exist, need to fire up a job to initiate noise handshake
 	if p.handshake.state == handshakeStateZeroed {
-		hs = p.iface.handshakeCreateInitiation(&p.handshake)
+		hs, err = p.iface.handshakeCreateInitiation(&p.handshake)
+		if err != nil {
+			return err
+		}
+
 		hs = p.iface.cookieAddMACs(hs, p)
 		p.timerAnyAuthenticatedPacketTraversal()
 		n, err := p.conn.WriteToUDP(hs, p.endpointAddr)
@@ -160,14 +170,13 @@ func (p *peer) initTimers() {
 	p.killEphemerals.Stop()
 	p.persistentKeepalive = time.AfterFunc(time.Hour, p.expiredPersistentKeepalive)
 	p.persistentKeepalive.Stop()
-
 }
 
+//lint:ignore U1000 keep for the moment
 func (p *peer) timerHandshakeInitiated() {
 }
 
 func (p *peer) timerAnyAuthenticatedPacketReceived() {
-
 }
 
 func (p *peer) timerAnyAuthenticatedPacketTraversal() {
@@ -180,11 +189,9 @@ func (p *peer) timerAnyAuthenticatedPacketTraversal() {
 }
 
 func (p *peer) timerEphemeralKeyCreated() {
-
 }
 
 func (p *peer) timerHandshakeComplete() {
-
 }
 
 func (p *peer) expiredRetransmitHandshake() {}
@@ -214,7 +221,7 @@ func (p *peer) sendQueue() error {
 		err := p.createData(first.value)
 
 		if err == nil {
-
+			return err
 		}
 
 		prev = first
@@ -223,7 +230,7 @@ func (p *peer) sendQueue() error {
 	return nil
 }
 
-var ErrNoKey = errors.New("No Key")
+var ErrNoKey = errors.New("no key")
 
 func (p *peer) createData(buf []byte) error {
 	p.keypairs.RLock()
@@ -258,6 +265,8 @@ func (p *peer) createData(buf []byte) error {
 	out := make([]byte, size)
 	out[0] = byte(messageData)
 	binary.LittleEndian.PutUint64(out[1:9], nonce)
+
+	//lint:ignore SA4006 unfinished code
 	out = keypair.sending.Encrypt(out[10:], nonce, nil, buf)
 
 	/* whew, we now have an encrypted data packet (hopefully, cross fingers);
@@ -271,6 +280,7 @@ func (p *peer) createData(buf []byte) error {
 func (p *peer) String() string {
 	return fmt.Sprintf("%d (%s:%d)", p.internalID, p.endpointAddr.IP, p.endpointAddr.Port)
 }
+
 func slackTime(seconds int) time.Duration {
 	const quarterSecond = 250 * time.Millisecond
 	return time.Duration(seconds)*time.Second - quarterSecond

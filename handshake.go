@@ -10,9 +10,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/flynn/go-wireguard/internal/skip32"
-	"github.com/flynn/go-wireguard/internal/tai64n"
 	"github.com/flynn/noise"
+	"github.com/libp2p/go-wireguard/internal/skip32"
+	"github.com/libp2p/go-wireguard/internal/tai64n"
 )
 
 const (
@@ -52,9 +52,12 @@ func init() {
 	handshakeCounterCipher, _ = skip32.New(key)
 }
 
-var keypairCounter uint64
-var handshakeCounter uint32
-var handshakeCounterCipher *skip32.Skip32
+var (
+	//lint:ignore U1000 keep for the moment
+	keypairCounter         uint64
+	handshakeCounter       uint32
+	handshakeCounterCipher *skip32.Skip32
+)
 
 func getHandshakeID() uint32 {
 	return handshakeCounterCipher.Obfus(atomic.AddUint32(&handshakeCounter, 1))
@@ -143,7 +146,7 @@ func (n *noiseCounter) Validate(theirs uint64) bool {
 	index &= CounterBitsTotal/BitsPerInt - 1
 
 	var mask uint = 1 << ((theirs & (CounterRedundantBits - 1)) - 1)
-	old := 0 == (n.backtrack[index] & mask)
+	old := (n.backtrack[index] & mask) == 0
 	n.backtrack[index] |= mask
 
 	return old
@@ -176,13 +179,19 @@ func (k *noiseSymmetricKey) Nonce() (nonce uint64, ok bool) {
 }
 
 type noiseKeypair struct {
+	//lint:ignore U1000 keep for the moment
 	initiator bool
 
-	internalID  uint64
+	//lint:ignore U1000 keep for the moment
+	internalID uint64
+
 	senderIndex uint32
+	//lint:ignore U1000 keep for the moment
 	remoteIndex uint32
 
-	sending   noiseSymmetricKey
+	sending noiseSymmetricKey
+
+	//lint:ignore U1000 keep for the moment
 	receiving noiseSymmetricKey
 
 	peer *peer
@@ -220,18 +229,20 @@ var (
 	errInvalidState     = errors.New("wireguard: handshake is in invalid state")
 )
 
-func (f *Interface) handshakeCreateInitiation(handshake *noiseHandshake) []byte {
+//lint:ignore U1000 keep for the moment
+func (f *Interface) handshakeCreateInitiation(handshake *noiseHandshake) ([]byte, error) {
 	f.identityMtx.RLock()
 	defer f.identityMtx.RUnlock()
 
 	if len(f.staticKey.Private) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	handshake.Lock()
 	defer handshake.Unlock()
 
-	handshake.hs = noise.NewHandshakeState(noise.Config{
+	var err error
+	handshake.hs, err = noise.NewHandshakeState(noise.Config{
 		CipherSuite:   noiseCiphersuite,
 		Random:        rand.Reader,
 		Pattern:       noise.HandshakeIK,
@@ -241,6 +252,9 @@ func (f *Interface) handshakeCreateInitiation(handshake *noiseHandshake) []byte 
 		StaticKeypair: f.staticKey,
 		PeerStatic:    handshake.remoteStatic[:],
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	res := make([]byte, 5, messageHandshakeInitiationLen)
 	res[0] = byte(messageHandshakeInitiation)
@@ -251,7 +265,10 @@ func (f *Interface) handshakeCreateInitiation(handshake *noiseHandshake) []byte 
 	handshake.senderIndex = getHandshakeID()
 	binary.LittleEndian.PutUint32(res[1:5], handshake.senderIndex)
 
-	res, _, _ = handshake.hs.WriteMessage(res, taiBuf[:])
+	res, _, _, err = handshake.hs.WriteMessage(res, taiBuf[:])
+	if err != nil {
+		return nil, err
+	}
 
 	handshake.state = handshakeStateCreatedInitiation
 
@@ -259,7 +276,7 @@ func (f *Interface) handshakeCreateInitiation(handshake *noiseHandshake) []byte 
 	f.handshakes[handshake.senderIndex] = handshake
 	f.handshakesMtx.Unlock()
 
-	return res
+	return res, nil
 }
 
 const minInitiationInterval = time.Second / 2
@@ -272,7 +289,7 @@ func (f *Interface) handshakeConsumeInitiation(data []byte) (*peer, error) {
 		return nil, errNoIdentity
 	}
 
-	hs := noise.NewHandshakeState(noise.Config{
+	hs, err := noise.NewHandshakeState(noise.Config{
 		CipherSuite:   noiseCiphersuite,
 		Random:        rand.Reader,
 		Pattern:       noise.HandshakeIK,
@@ -281,6 +298,10 @@ func (f *Interface) handshakeConsumeInitiation(data []byte) (*peer, error) {
 		PresharedKey:  f.presharedKey,
 		StaticKeypair: f.staticKey,
 	})
+	if err != nil {
+		return nil, err
+	}
+
 	var taiBuf [12]byte
 	tai, _, _, err := hs.ReadMessage(taiBuf[:0], data[5:])
 	if err != nil {
@@ -317,18 +338,22 @@ func (f *Interface) handshakeConsumeInitiation(data []byte) (*peer, error) {
 	return peer, nil
 }
 
-func (f *Interface) handshakeCreateResponse(handshake *noiseHandshake) []byte {
+func (f *Interface) handshakeCreateResponse(handshake *noiseHandshake) ([]byte, error) {
 	handshake.Lock()
 	defer handshake.Unlock()
 
 	if handshake.state != handshakeStateConsumedInitiation {
-		return nil
+		return nil, nil
 	}
 
 	res := make([]byte, 9, messageHandshakeResponseLen)
 	res[0] = byte(messageHandshakeResponse)
 	binary.LittleEndian.PutUint32(res[5:], handshake.remoteIndex)
-	res, cs1, cs2 := handshake.hs.WriteMessage(res[9:], nil)
+	res, cs1, cs2, err := handshake.hs.WriteMessage(res[9:], nil)
+	if err != nil {
+		return nil, err
+	}
+
 	handshake.receivingCipher = cs1.Cipher()
 	handshake.sendingCipher = cs2.Cipher()
 	handshake.senderIndex = getHandshakeID()
@@ -340,7 +365,7 @@ func (f *Interface) handshakeCreateResponse(handshake *noiseHandshake) []byte {
 
 	handshake.state = handshakeStateCreatedResponse
 
-	return res
+	return res, nil
 }
 
 func (f *Interface) handshakeConsumeResponse(data []byte) (*peer, error) {
@@ -377,6 +402,7 @@ func (f *Interface) handshakeConsumeResponse(data []byte) (*peer, error) {
 	return handshake.peer, nil
 }
 
+//lint:ignore U1000 keep for the moment
 func (f *Interface) handshakeBeginSession(handshake *noiseHandshake, keypairs *noiseKeypairs, initiator bool) {
 	handshake.Lock()
 	defer handshake.Unlock()
@@ -416,6 +442,7 @@ func (f *Interface) handshakeBeginSession(handshake *noiseHandshake, keypairs *n
 	f.keypairsMtx.Unlock()
 }
 
+//lint:ignore U1000 keep for the moment
 func (f *Interface) receivedWithKeypair(keypairs *noiseKeypairs, receivedKeypair *noiseKeypair) (next bool) {
 	keypairs.Lock()
 	defer keypairs.Unlock()

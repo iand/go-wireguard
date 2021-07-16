@@ -5,11 +5,13 @@ import (
 	"net"
 	"testing"
 
-	"github.com/flynn/go-wireguard/internal/critbitgo"
+	"github.com/libp2p/go-wireguard/internal/critbitgo"
 )
 
-var routeCount int = 10000
-var routes []string
+var (
+	routeCount int = 10000
+	routes     []string
+)
 
 func init() {
 	routes = make([]string, routeCount)
